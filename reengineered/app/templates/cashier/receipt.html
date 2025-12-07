@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt - POS System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-body" id="receiptContent">
+                    <!-- Receipt Header -->
+                    <div class="text-center mb-4">
+                        <h3 class="mb-1">POS System</h3>
+                        <p class="text-muted mb-0">Receipt</p>
+                        <hr>
+                    </div>
+                    
+                    <!-- Transaction Info -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Transaction #</small>
+                            <p class="mb-0"><strong>{{ transaction.transaction_number }}</strong></p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted">Date</small>
+                            <p class="mb-0"><strong>{{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Type</small>
+                            <p class="mb-0"><strong>{{ transaction.transaction_type|capitalize }}</strong></p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted">Cashier</small>
+                            <p class="mb-0"><strong>{{ transaction.employee.full_name }}</strong></p>
+                        </div>
+                    </div>
+                    
+                    {% if transaction.customer %}
+                    <div class="mb-3">
+                        <small class="text-muted">Customer</small>
+                        <p class="mb-0"><strong>{{ transaction.customer.phone }}</strong></p>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <!-- Items -->
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in transaction.items %}
+                            <tr>
+                                <td>{{ item.item.name }}</td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end">${{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-end">${{ "%.2f"|format(item.line_total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    <hr>
+                    
+                    <!-- Totals -->
+                    <div class="row">
+                        <div class="col-6 text-end">Subtotal:</div>
+                        <div class="col-6 text-end">${{ "%.2f"|format(transaction.subtotal) }}</div>
+                    </div>
+                    
+                    {% if transaction.discount_amount > 0 %}
+                    <div class="row text-success">
+                        <div class="col-6 text-end">Discount:</div>
+                        <div class="col-6 text-end">-${{ "%.2f"|format(transaction.discount_amount) }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-6 text-end">Tax:</div>
+                        <div class="col-6 text-end">${{ "%.2f"|format(transaction.tax_amount) }}</div>
+                    </div>
+                    
+                    <div class="row fs-5 fw-bold mt-2">
+                        <div class="col-6 text-end">Total:</div>
+                        <div class="col-6 text-end">${{ "%.2f"|format(transaction.total) }}</div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Payment Info -->
+                    <div class="row">
+                        <div class="col-6 text-end">Payment Method:</div>
+                        <div class="col-6 text-end">{{ transaction.payment_method|capitalize }}</div>
+                    </div>
+                    
+                    {% if transaction.payment_method == 'cash' %}
+                    <div class="row">
+                        <div class="col-6 text-end">Amount Tendered:</div>
+                        <div class="col-6 text-end">${{ "%.2f"|format(transaction.amount_tendered) }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 text-end">Change:</div>
+                        <div class="col-6 text-end">${{ "%.2f"|format(transaction.change_given) }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Footer -->
+                    <div class="text-center mt-4">
+                        <p class="mb-1">Thank you for your business!</p>
+                        <small class="text-muted">Please keep this receipt for your records.</small>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ url_for('cashier.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Print Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .card-footer, .navbar, footer { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+    }
+</style>
+{% endblock %}

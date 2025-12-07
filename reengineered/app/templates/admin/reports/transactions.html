@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Report - POS System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-receipt me-2"></i>Transaction Report
+        </h2>
+        <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Reports
+        </a>
+    </div>
+    
+    <!-- Date Range Selector -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <span class="fw-bold">Date Range:</span>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group">
+                        <a href="{{ url_for('admin.transaction_report', days=7) }}" 
+                           class="btn btn-sm {% if days == 7 %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            7 Days
+                        </a>
+                        <a href="{{ url_for('admin.transaction_report', days=30) }}" 
+                           class="btn btn-sm {% if days == 30 %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            30 Days
+                        </a>
+                        <a href="{{ url_for('admin.transaction_report', days=90) }}" 
+                           class="btn btn-sm {% if days == 90 %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            90 Days
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Total Sales</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(total_sales) }}</h3>
+                        </div>
+                        <i class="bi bi-cart-check display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Total Rentals</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(total_rentals) }}</h3>
+                        </div>
+                        <i class="bi bi-hourglass display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Total Revenue</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(total_sales + total_rentals) }}</h3>
+                        </div>
+                        <i class="bi bi-currency-dollar display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transactions Table -->
+    <div class="card">
+        <div class="card-header">
+            <span>Transactions (Last {{ days }} Days)</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Payment</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Cashier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.transaction_id }}</td>
+                            <td>{{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if transaction.is_sale() %}
+                                <span class="badge bg-success">Sale</span>
+                                {% else %}
+                                <span class="badge bg-info">Rental</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ transaction.payment_method }}</span>
+                            </td>
+                            <td>{{ transaction.items|length }} item(s)</td>
+                            <td>${{ "%.2f"|format(transaction.total) }}</td>
+                            <td>{{ transaction.employee.full_name if transaction.employee else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                No transactions found for this period
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

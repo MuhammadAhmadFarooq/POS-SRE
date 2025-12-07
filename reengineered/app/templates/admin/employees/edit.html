@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Employee - POS System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-pencil-square me-2"></i>Edit Employee</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Employees
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Employee Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.edit_employee', id=employee.id) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="employee_id" class="form-label">Employee ID</label>
+                                <input type="text" class="form-control" id="employee_id" 
+                                       value="{{ employee.employee_id }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" 
+                                       value="{{ employee.username }}" disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" 
+                                       name="first_name" required 
+                                       value="{{ employee.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" 
+                                       name="last_name" required 
+                                       value="{{ employee.last_name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role *</label>
+                            <select class="form-select" id="role" name="role" required>
+                                {% for role in roles %}
+                                <option value="{{ role }}" {% if role == employee.role %}selected{% endif %}>
+                                    {{ role }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Reset Password Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-key me-2"></i>Reset Password</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.reset_employee_password', id=employee.id) }}">
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" 
+                                   name="new_password" required minlength="4"
+                                   placeholder="Minimum 4 characters">
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning"
+                                    onclick="return confirm('Reset password for {{ employee.full_name }}?')">
+                                <i class="bi bi-key me-2"></i>Reset Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Account Status Card -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-shield me-2"></i>Account Status</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        Status: 
+                        {% if employee.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-muted small">
+                        Created: {{ employee.created_at.strftime('%Y-%m-%d') if employee.created_at else 'N/A' }}<br>
+                        Last Login: {{ employee.last_login.strftime('%Y-%m-%d %H:%M') if employee.last_login else 'Never' }}
+                    </p>
+                    <form method="POST" action="{{ url_for('admin.toggle_employee_status', id=employee.id) }}">
+                        <div class="d-grid">
+                            {% if employee.is_active %}
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('Deactivate {{ employee.full_name }}?')">
+                                <i class="bi bi-person-x me-2"></i>Deactivate Account
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-person-check me-2"></i>Activate Account
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

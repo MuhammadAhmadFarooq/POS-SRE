@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Overdue Rentals Report - POS System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-clock-history me-2"></i>Overdue Rentals Report
+        </h2>
+        <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Reports
+        </a>
+    </div>
+    
+    <!-- Overdue Rentals -->
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-exclamation-triangle me-2"></i>Overdue Rentals ({{ overdue|length }})
+        </div>
+        <div class="card-body">
+            {% if overdue %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rental ID</th>
+                            <th>Item</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Due Date</th>
+                            <th>Days Overdue</th>
+                            <th>Late Fee</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in overdue %}
+                        <tr>
+                            <td>{{ rental.id }}</td>
+                            <td>{{ rental.item.name if rental.item else 'N/A' }}</td>
+                            <td>{{ rental.customer.name if rental.customer else 'N/A' }}</td>
+                            <td>{{ rental.customer.phone if rental.customer else 'N/A' }}</td>
+                            <td>{{ rental.return_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge bg-danger">{{ rental.days_overdue() }} days</span>
+                            </td>
+                            <td class="text-danger fw-bold">${{ "%.2f"|format(rental.calculate_late_fee()) }}</td>
+                            <td>
+                                <a href="{{ url_for('cashier.process_return') }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-arrow-return-left"></i> Process Return
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted mb-0">
+                <i class="bi bi-check-circle me-2"></i>No overdue rentals
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Due Soon Rentals -->
+    <div class="card border-warning">
+        <div class="card-header bg-warning">
+            <i class="bi bi-clock me-2"></i>Due Within 3 Days ({{ due_soon|length }})
+        </div>
+        <div class="card-body">
+            {% if due_soon %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rental ID</th>
+                            <th>Item</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Due Date</th>
+                            <th>Days Until Due</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in due_soon %}
+                        <tr>
+                            <td>{{ rental.id }}</td>
+                            <td>{{ rental.item.name if rental.item else 'N/A' }}</td>
+                            <td>{{ rental.customer.name if rental.customer else 'N/A' }}</td>
+                            <td>{{ rental.customer.phone if rental.customer else 'N/A' }}</td>
+                            <td>{{ rental.return_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% set days_until = (rental.return_date.date() - import_datetime().date()).days %}
+                                <span class="badge bg-warning text-dark">{{ days_until }} days</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted mb-0">
+                <i class="bi bi-check-circle me-2"></i>No rentals due within the next 3 days
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

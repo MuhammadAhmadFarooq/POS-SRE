@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Item - POS System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-pencil-square me-2"></i>Edit Item</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.inventory') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Inventory
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Item Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.edit_item', id=item.id) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="item_id" class="form-label">Item ID</label>
+                                <input type="text" class="form-control" id="item_id" 
+                                       value="{{ item.item_id }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="item_type" class="form-label">Item Type</label>
+                                <input type="text" class="form-control" id="item_type" 
+                                       value="{{ item.item_type|capitalize }}" disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Item Name *</label>
+                            <input type="text" class="form-control" id="name" 
+                                   name="name" required value="{{ item.name }}">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="price" 
+                                           name="price" required min="0" step="0.01"
+                                           value="{{ item.price }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="quantity" 
+                                       name="quantity" required min="0" 
+                                       value="{{ item.quantity }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3">{{ item.description or '' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="low_stock_threshold" class="form-label">Low Stock Threshold</label>
+                            <input type="number" class="form-control" id="low_stock_threshold" 
+                                   name="low_stock_threshold" min="0" 
+                                   value="{{ item.low_stock_threshold }}">
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Stock Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Quick Stock Update</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.update_stock', id=item.id) }}">
+                        <div class="mb-3">
+                            <label for="stock_adjustment" class="form-label">Adjust Stock By</label>
+                            <input type="number" class="form-control" id="stock_adjustment" 
+                                   name="adjustment" placeholder="+10 or -5">
+                            <div class="form-text">Positive to add, negative to remove</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-slash-minus me-2"></i>Update Stock
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Item Status Card -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Item Status</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        Status: 
+                        {% if item.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </p>
+                    <p>
+                        Stock Level: 
+                        {% if item.is_low_stock() %}
+                        <span class="badge bg-warning text-dark">Low Stock</span>
+                        {% elif item.quantity == 0 %}
+                        <span class="badge bg-danger">Out of Stock</span>
+                        {% else %}
+                        <span class="badge bg-success">In Stock</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-muted small">
+                        Created: {{ item.created_at.strftime('%Y-%m-%d') if item.created_at else 'N/A' }}<br>
+                        Updated: {{ item.updated_at.strftime('%Y-%m-%d') if item.updated_at else 'N/A' }}
+                    </p>
+                    <form method="POST" action="{{ url_for('admin.toggle_item_status', id=item.id) }}">
+                        <div class="d-grid">
+                            {% if item.is_active %}
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('Deactivate {{ item.name }}?')">
+                                <i class="bi bi-x-circle me-2"></i>Deactivate Item
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-2"></i>Activate Item
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

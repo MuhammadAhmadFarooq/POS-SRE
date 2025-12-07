@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - POS System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-circle me-2"></i>My Profile
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="bg-light rounded-circle mx-auto d-flex align-items-center justify-content-center" 
+                                 style="width: 150px; height: 150px;">
+                                <i class="bi bi-person-fill text-secondary" style="font-size: 5rem;"></i>
+                            </div>
+                            <h4 class="mt-3">{{ employee.full_name }}</h4>
+                            <span class="badge {% if employee.role == 'Admin' %}bg-danger{% elif employee.role == 'Manager' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ employee.role }}
+                            </span>
+                        </div>
+                        <div class="col-md-8">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row" style="width: 40%;">Employee ID</th>
+                                        <td>{{ employee.employee_id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Username</th>
+                                        <td>{{ employee.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">First Name</th>
+                                        <td>{{ employee.first_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Last Name</th>
+                                        <td>{{ employee.last_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Role</th>
+                                        <td>{{ employee.role }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Account Status</th>
+                                        <td>
+                                            {% if employee.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Member Since</th>
+                                        <td>{{ employee.created_at.strftime('%Y-%m-%d') if employee.created_at else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Last Login</th>
+                                        <td>{{ employee.last_login.strftime('%Y-%m-%d %H:%M') if employee.last_login else 'N/A' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div class="mt-4">
+                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-key me-2"></i>Change Password
+                                </a>
+                                {% if employee.has_admin_access() %}
+                                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('cashier.dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

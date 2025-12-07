@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Process Return - POS System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-arrow-return-left me-2"></i>Process Return</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('cashier.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-search me-2"></i>Find Rental</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('cashier.process_return') }}">
+                        <div class="mb-3">
+                            <label for="customer_phone" class="form-label">Customer Phone</label>
+                            <input type="tel" class="form-control" id="customer_phone" 
+                                   name="customer_phone" placeholder="Enter customer phone"
+                                   value="{{ request.args.get('customer_phone', '') }}">
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Search Rentals
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Active Rentals</h5>
+                </div>
+                <div class="card-body">
+                    {% if rentals or active %}
+                    {% set display_rentals = rentals if rentals else active %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rental in display_rentals %}
+                                <tr class="{% if rental.is_overdue() %}table-danger{% endif %}">
+                                    <td>
+                                        {{ rental.item.name }}
+                                        <br><small class="text-muted">Qty: {{ rental.quantity }}</small>
+                                    </td>
+                                    <td>
+                                        {{ rental.due_date.strftime('%Y-%m-%d') }}
+                                        {% if rental.is_overdue() %}
+                                        <br><small class="text-danger">
+                                            Overdue {{ rental.days_overdue() }} days
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if rental.is_overdue() %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        <br><small>Late fee: ${{ "%.2f"|format(rental.calculate_late_fee()) }}</small>
+                                        {% else %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('cashier.process_return') }}">
+                                            <input type="hidden" name="customer_phone" value="{{ rental.customer.phone }}">
+                                            <input type="hidden" name="item_id" value="{{ rental.item.item_id }}">
+                                            <button type="submit" class="btn btn-sm btn-primary"
+                                                    onclick="return confirm('Process return for {{ rental.item.name }}?')">
+                                                <i class="bi bi-check-lg"></i> Return
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">
+                        {% if request.args.get('customer_phone') %}
+                        No active rentals found for this customer.
+                        {% else %}
+                        Enter a customer phone number to search for rentals.
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

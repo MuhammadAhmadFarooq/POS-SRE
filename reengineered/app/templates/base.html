@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}POS System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            height: calc(100vh - 56px);
+            width: 250px;
+            background-color: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .sidebar-link {
+            display: block;
+            padding: 12px 20px;
+            color: #333;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: #f8f9fa;
+            border-left-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+        
+        .sidebar-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: calc(100vh - 56px);
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 10px;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .stat-card .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .badge-sale { background-color: var(--success-color); }
+        .badge-rental { background-color: var(--secondary-color); }
+        .badge-return { background-color: var(--warning-color); }
+        
+        .alert-dismissible {
+            margin-bottom: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shop"></i> POS System
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.full_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="dropdown-item-text text-muted">{{ current_user.role }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="bi bi-person"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+                                <i class="bi bi-key"></i> Change Password
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Sidebar -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar">
+        {% if current_user.has_admin_access() %}
+        <!-- Admin Sidebar -->
+        <div class="py-2">
+            <span class="sidebar-link text-muted small">ADMIN</span>
+            <a class="sidebar-link" href="{{ url_for('admin.dashboard') }}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="sidebar-link" href="{{ url_for('admin.employees') }}">
+                <i class="bi bi-people"></i> Employees
+            </a>
+            <a class="sidebar-link" href="{{ url_for('admin.inventory') }}">
+                <i class="bi bi-box-seam"></i> Inventory
+            </a>
+            <a class="sidebar-link" href="{{ url_for('admin.coupons') }}">
+                <i class="bi bi-ticket-perforated"></i> Coupons
+            </a>
+            <a class="sidebar-link" href="{{ url_for('admin.reports') }}">
+                <i class="bi bi-graph-up"></i> Reports
+            </a>
+        </div>
+        <hr class="my-2">
+        {% endif %}
+        
+        <!-- Cashier Sidebar -->
+        <div class="py-2">
+            <span class="sidebar-link text-muted small">CASHIER</span>
+            <a class="sidebar-link" href="{{ url_for('cashier.dashboard') }}">
+                <i class="bi bi-house"></i> Dashboard
+            </a>
+            <a class="sidebar-link" href="{{ url_for('cashier.new_sale') }}">
+                <i class="bi bi-cart-plus"></i> New Sale
+            </a>
+            <a class="sidebar-link" href="{{ url_for('cashier.new_rental') }}">
+                <i class="bi bi-calendar-plus"></i> New Rental
+            </a>
+            <a class="sidebar-link" href="{{ url_for('cashier.process_return') }}">
+                <i class="bi bi-arrow-return-left"></i> Process Return
+            </a>
+            <a class="sidebar-link" href="{{ url_for('cashier.check_rentals') }}">
+                <i class="bi bi-search"></i> Check Rentals
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="{% if current_user.is_authenticated %}main-content{% else %}container{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

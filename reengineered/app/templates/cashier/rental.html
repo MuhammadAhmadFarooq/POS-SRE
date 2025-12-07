@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Rental - POS System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-table { font-size: 0.95rem; }
+    .item-card { cursor: pointer; transition: all 0.2s; }
+    .item-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .item-card.out-of-stock { opacity: 0.6; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-clock-history me-2"></i>New Rental</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('cashier.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Items Panel -->
+        <div class="col-lg-7">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0"><i class="bi bi-grid me-2"></i>Rental Items</h5>
+                        </div>
+                        <div class="col-auto">
+                            <input type="text" class="form-control form-control-sm" 
+                                   id="searchItems" placeholder="Search items...">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3" id="itemsGrid">
+                        {% for item in items %}
+                        <div class="col item-col" data-name="{{ item.name.lower() }}">
+                            <div class="card item-card h-100 {% if item.quantity <= 0 %}out-of-stock{% endif %}"
+                                 data-item-id="{{ item.id }}"
+                                 data-item-name="{{ item.name }}"
+                                 data-item-price="{{ item.price }}"
+                                 data-item-stock="{{ item.quantity }}"
+                                 data-in-stock="{{ 'true' if item.quantity > 0 else 'false' }}"
+                                 onclick="handleItemClick(this)">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-film fs-2 text-primary mb-2"></i>
+                                    <h6 class="card-title mb-1">{{ item.name }}</h6>
+                                    <p class="text-success mb-1">${{ "%.2f"|format(item.price) }}/day</p>
+                                    <small class="text-muted">Stock: {{ item.quantity }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <p class="text-muted text-center">No rental items available</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cart Panel -->
+        <div class="col-lg-5">
+            <form method="POST" action="{{ url_for('cashier.new_rental') }}" id="rentalForm">
+                <input type="hidden" name="items" id="cartItems" value="[]">
+                
+                <!-- Customer Info -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-person me-2"></i>Customer Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="customer_phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="customer_phone" 
+                                   name="customer_phone" required placeholder="Enter customer phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="rental_days" class="form-label">Rental Period</label>
+                            <select class="form-select" id="rental_days" name="rental_days">
+                                <option value="1">1 Day</option>
+                                <option value="3">3 Days</option>
+                                <option value="7" selected>7 Days (1 Week)</option>
+                                <option value="14">14 Days (2 Weeks)</option>
+                                <option value="30">30 Days (1 Month)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cart -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Rental Cart</h5>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearCart()">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm cart-table mb-0" id="cartTable">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-center" style="width: 100px;">Qty</th>
+                                    <th class="text-end" style="width: 80px;">Price</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartBody">
+                                <tr id="emptyCart">
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        Cart is empty
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Totals -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col">Subtotal:</div>
+                            <div class="col-auto" id="subtotalDisplay">$0.00</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col">Tax (8%):</div>
+                            <div class="col-auto" id="taxDisplay">$0.00</div>
+                        </div>
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col"><strong>Total:</strong></div>
+                            <div class="col-auto"><strong id="totalDisplay">$0.00</strong></div>
+                        </div>
+                        
+                        <!-- Payment -->
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method">
+                                {% for method in payment_methods %}
+                                <option value="{{ method }}">{{ method|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="cashPaymentSection">
+                            <label for="amount_tendered" class="form-label">Amount Tendered</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount_tendered" 
+                                       name="amount_tendered" step="0.01" min="0" value="0">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3" id="changeSection" style="display: none;">
+                            <div class="col">Change:</div>
+                            <div class="col-auto text-success"><strong id="changeDisplay">$0.00</strong></div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="checkoutBtn" disabled>
+                                <i class="bi bi-check-circle me-2"></i>Complete Rental
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let cart = [];
+    const TAX_RATE = 0.08;
+    
+    function handleItemClick(element) {
+        if (element.dataset.inStock === 'true') {
+            addToCart(element);
+        }
+    }
+    
+    function addToCart(element) {
+        const itemId = element.dataset.itemId;
+        const itemName = element.dataset.itemName;
+        const itemPrice = parseFloat(element.dataset.itemPrice);
+        const itemStock = parseInt(element.dataset.itemStock);
+        
+        const existing = cart.find(item => item.item_id == itemId);
+        
+        if (existing) {
+            if (existing.quantity < itemStock) {
+                existing.quantity++;
+            } else {
+                alert('Cannot add more - not enough stock');
+                return;
+            }
+        } else {
+            cart.push({
+                item_id: parseInt(itemId),
+                name: itemName,
+                price: itemPrice,
+                quantity: 1,
+                max_stock: itemStock
+            });
+        }
+        
+        updateCartDisplay();
+    }
+    
+    function removeFromCart(itemId) {
+        cart = cart.filter(item => item.item_id != itemId);
+        updateCartDisplay();
+    }
+    
+    function updateQuantity(itemId, delta) {
+        const item = cart.find(i => i.item_id == itemId);
+        if (item) {
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) {
+                removeFromCart(itemId);
+            } else if (newQty <= item.max_stock) {
+                item.quantity = newQty;
+                updateCartDisplay();
+            }
+        }
+    }
+    
+    function clearCart() {
+        cart = [];
+        updateCartDisplay();
+    }
+    
+    function updateCartDisplay() {
+        const cartBody = document.getElementById('cartBody');
+        const emptyCart = document.getElementById('emptyCart');
+        
+        if (cart.length === 0) {
+            cartBody.innerHTML = `
+                <tr id="emptyCart">
+                    <td colspan="4" class="text-center text-muted py-4">Cart is empty</td>
+                </tr>
+            `;
+        } else {
+            cartBody.innerHTML = cart.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary" 
+                                    onclick="updateQuantity(${item.item_id}, -1)">-</button>
+                            <span class="btn btn-outline-secondary disabled">${item.quantity}</span>
+                            <button type="button" class="btn btn-outline-secondary" 
+                                    onclick="updateQuantity(${item.item_id}, 1)">+</button>
+                        </div>
+                    </td>
+                    <td class="text-end">$${(item.price * item.quantity).toFixed(2)}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="removeFromCart(${item.item_id})">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        calculateTotals();
+    }
+    
+    function calculateTotals() {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const tax = subtotal * TAX_RATE;
+        const total = subtotal + tax;
+        
+        document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toFixed(2);
+        document.getElementById('taxDisplay').textContent = '$' + tax.toFixed(2);
+        document.getElementById('totalDisplay').textContent = '$' + total.toFixed(2);
+        
+        // Update hidden field
+        const cartData = cart.map(item => ({
+            item_id: item.item_id,
+            quantity: item.quantity
+        }));
+        document.getElementById('cartItems').value = JSON.stringify(cartData);
+        
+        // Enable/disable checkout button
+        const customerPhone = document.getElementById('customer_phone').value.trim();
+        document.getElementById('checkoutBtn').disabled = cart.length === 0 || !customerPhone;
+        
+        // Calculate change
+        updateChange();
+    }
+    
+    function updateChange() {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const total = subtotal + (subtotal * TAX_RATE);
+        const tendered = parseFloat(document.getElementById('amount_tendered').value) || 0;
+        const change = tendered - total;
+        
+        const changeSection = document.getElementById('changeSection');
+        const changeDisplay = document.getElementById('changeDisplay');
+        
+        if (tendered > 0 && change >= 0) {
+            changeSection.style.display = 'flex';
+            changeDisplay.textContent = '$' + change.toFixed(2);
+        } else {
+            changeSection.style.display = 'none';
+        }
+    }
+    
+    // Event listeners
+    document.getElementById('amount_tendered').addEventListener('input', updateChange);
+    document.getElementById('customer_phone').addEventListener('input', calculateTotals);
+    
+    document.getElementById('payment_method').addEventListener('change', function() {
+        const cashSection = document.getElementById('cashPaymentSection');
+        cashSection.style.display = this.value === 'cash' ? 'block' : 'none';
+    });
+    
+    // Search functionality
+    document.getElementById('searchItems').addEventListener('input', function() {
+        const search = this.value.toLowerCase();
+        document.querySelectorAll('.item-col').forEach(col => {
+            const name = col.dataset.name;
+            col.style.display = name.includes(search) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

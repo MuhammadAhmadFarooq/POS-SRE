@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}New Sale - POS System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">
+        <i class="bi bi-cart-plus me-2"></i>New Sale
+    </h2>
+    
+    <div class="row">
+        <!-- Item Selection -->
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-search me-2"></i>Select Items
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" 
+                               class="form-control" 
+                               id="searchItems" 
+                               placeholder="Search items by name or ID...">
+                    </div>
+                    
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover">
+                            <thead class="sticky-top bg-white">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTable">
+                                {% for item in items %}
+                                <tr data-item="{{ item.to_dict()|tojson|e }}">
+                                    <td>{{ item.item_id }}</td>
+                                    <td>{{ item.name }}</td>
+                                    <td>${{ "%.2f"|format(item.price) }}</td>
+                                    <td>
+                                        {% if item.quantity > 0 %}
+                                        <span class="badge bg-success">{{ item.quantity }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Out</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.quantity > 0 %}
+                                        <button class="btn btn-sm btn-primary add-item-btn" 
+                                                data-item-id="{{ item.item_id }}"
+                                                data-item-name="{{ item.name }}"
+                                                data-item-price="{{ item.price }}"
+                                                data-item-stock="{{ item.quantity }}">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cart -->
+        <div class="col-md-5">
+            <form method="POST" id="saleForm">
+                <input type="hidden" name="items" id="cartItems">
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-cart me-2"></i>Shopping Cart
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="cartTable">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Qty</th>
+                                        <th>Price</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cartBody">
+                                    <tr id="emptyCartRow">
+                                        <td colspan="4" class="text-center text-muted">
+                                            Cart is empty
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Coupon -->
+                        <div class="mb-3">
+                            <label class="form-label">Coupon Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="coupon_code" id="couponCode">
+                                <button class="btn btn-outline-secondary" type="button" id="applyCoupon">
+                                    Apply
+                                </button>
+                            </div>
+                            <div id="couponMessage" class="form-text"></div>
+                        </div>
+                        
+                        <!-- Totals -->
+                        <div class="bg-light p-3 rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Discount:</span>
+                                <span id="discount" class="text-danger">-$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tax (8%):</span>
+                                <span id="tax">$0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <strong>Total:</strong>
+                                <strong id="total" class="text-primary fs-4">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-credit-card me-2"></i>Payment
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-select" name="payment_method" id="paymentMethod">
+                                {% for method in payment_methods %}
+                                <option value="{{ method }}">{{ method|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="cashFields">
+                            <label class="form-label">Amount Tendered</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="amount_tendered" 
+                                   id="amountTendered"
+                                   step="0.01" 
+                                   min="0">
+                            <div class="d-flex justify-content-between mt-2">
+                                <span>Change:</span>
+                                <strong id="change">$0.00</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Customer Phone (Optional)</label>
+                            <input type="text" class="form-control" name="customer_phone">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg" id="completeSale">
+                                <i class="bi bi-check-circle me-2"></i>Complete Sale
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cart management
+    let cart = [];
+    let discountPercent = 0;
+    let discountAmount = 0;  // For fixed amount discounts
+    let appliedCoupon = null;
+    const TAX_RATE = 0.08;
+    
+    // Add item to cart
+    document.querySelectorAll('.add-item-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const itemName = this.dataset.itemName;
+            const itemPrice = parseFloat(this.dataset.itemPrice);
+            const itemStock = parseInt(this.dataset.itemStock);
+            
+            // Check if already in cart
+            const existing = cart.find(i => i.item_id === itemId);
+            if (existing) {
+                if (existing.quantity < itemStock) {
+                    existing.quantity++;
+                } else {
+                    alert('Not enough stock');
+                    return;
+                }
+            } else {
+                cart.push({
+                    item_id: itemId,
+                    name: itemName,
+                    price: itemPrice,
+                    quantity: 1,
+                    stock: itemStock
+                });
+            }
+            
+            updateCart();
+        });
+    });
+    
+    function updateCart() {
+        const tbody = document.getElementById('cartBody');
+        const emptyRow = document.getElementById('emptyCartRow');
+        
+        if (cart.length === 0) {
+            tbody.innerHTML = '<tr id="emptyCartRow"><td colspan="4" class="text-center text-muted">Cart is empty</td></tr>';
+        } else {
+            tbody.innerHTML = cart.map((item, index) => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm qty-input" 
+                               value="${item.quantity}" min="1" max="${item.stock}" 
+                               data-index="${index}" style="width: 70px;">
+                    </td>
+                    <td>$${(item.price * item.quantity).toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger remove-item" data-index="${index}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Add event listeners
+            document.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const index = parseInt(this.dataset.index);
+                    const newQty = parseInt(this.value);
+                    if (newQty > 0 && newQty <= cart[index].stock) {
+                        cart[index].quantity = newQty;
+                        updateCart();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.remove-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    cart.splice(index, 1);
+                    updateCart();
+                });
+            });
+        }
+        
+        updateTotals();
+    }
+    
+    function updateTotals() {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        // Calculate discount - either percentage or fixed amount
+        let calculatedDiscount = 0;
+        if (discountPercent > 0) {
+            calculatedDiscount = subtotal * (discountPercent / 100);
+        } else if (discountAmount > 0) {
+            calculatedDiscount = Math.min(discountAmount, subtotal);
+        }
+        const taxableAmount = subtotal - calculatedDiscount;
+        const tax = taxableAmount * TAX_RATE;
+        const total = taxableAmount + tax;
+        
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('discount').textContent = `-$${calculatedDiscount.toFixed(2)}`;
+        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        
+        // Update change
+        const tendered = parseFloat(document.getElementById('amountTendered').value) || 0;
+        const change = Math.max(0, tendered - total);
+        document.getElementById('change').textContent = `$${change.toFixed(2)}`;
+        
+        // Update hidden field
+        document.getElementById('cartItems').value = JSON.stringify(cart.map(i => ({
+            item_id: i.item_id,
+            quantity: i.quantity
+        })));
+    }
+    
+    // Amount tendered change
+    document.getElementById('amountTendered').addEventListener('input', updateTotals);
+    
+    // Payment method change
+    document.getElementById('paymentMethod').addEventListener('change', function() {
+        document.getElementById('cashFields').style.display = 
+            this.value === 'cash' ? 'block' : 'none';
+    });
+    
+    // Search items
+    document.getElementById('searchItems').addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('#itemsTable tr').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+    
+    // Apply Coupon handler
+    document.getElementById('applyCoupon').addEventListener('click', function() {
+        const code = document.getElementById('couponCode').value.trim();
+        const couponMessage = document.getElementById('couponMessage');
+        
+        if (!code) {
+            couponMessage.textContent = 'Please enter a coupon code';
+            couponMessage.className = 'form-text text-warning';
+            return;
+        }
+        
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('code', code);
+        formData.append('amount', subtotal.toFixed(2));
+        
+        fetch('{{ url_for("cashier.validate_coupon") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                appliedCoupon = code;
+                // Check if it's a percentage or fixed discount based on the discount returned
+                if (data.discount_percent && data.discount_percent > 0) {
+                    discountPercent = data.discount_percent;
+                    discountAmount = 0;
+                } else {
+                    // For percentage discounts, calculate the percent from discount amount
+                    // or just use the discount amount directly
+                    discountAmount = data.discount;
+                    discountPercent = 0;
+                }
+                couponMessage.textContent = data.message;
+                couponMessage.className = 'form-text text-success';
+                updateTotals();
+            } else {
+                appliedCoupon = null;
+                discountPercent = 0;
+                discountAmount = 0;
+                couponMessage.textContent = data.message;
+                couponMessage.className = 'form-text text-danger';
+                updateTotals();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            couponMessage.textContent = 'Error validating coupon';
+            couponMessage.className = 'form-text text-danger';
+        });
+    });
+    
+    // Form submit validation
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+        if (cart.length === 0) {
+            e.preventDefault();
+            alert('Cart is empty');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Cashier Dashboard - POS System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">
+        <i class="bi bi-house me-2"></i>Cashier Dashboard
+    </h2>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('cashier.new_sale') }}" class="card text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-cart-plus display-4 text-success mb-3"></i>
+                    <h5>New Sale</h5>
+                    <p class="text-muted mb-0">Process a new sale transaction</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('cashier.new_rental') }}" class="card text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-calendar-plus display-4 text-primary mb-3"></i>
+                    <h5>New Rental</h5>
+                    <p class="text-muted mb-0">Process a new rental transaction</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('cashier.process_return') }}" class="card text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-arrow-return-left display-4 text-warning mb-3"></i>
+                    <h5>Process Return</h5>
+                    <p class="text-muted mb-0">Process a rental return</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Today's Stats -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-graph-up me-2"></i>Today's Statistics
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card bg-light rounded">
+                                <div class="stat-value">{{ stats.transaction_count }}</div>
+                                <div class="stat-label">Transactions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card bg-light rounded">
+                                <div class="stat-value text-success">${{ "%.2f"|format(stats.total_sales) }}</div>
+                                <div class="stat-label">Sales</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card bg-light rounded">
+                                <div class="stat-value text-primary">${{ "%.2f"|format(stats.total_rentals) }}</div>
+                                <div class="stat-label">Rentals</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card bg-light rounded">
+                                <div class="stat-value text-info">${{ "%.2f"|format(stats.grand_total) }}</div>
+                                <div class="stat-label">Grand Total</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
